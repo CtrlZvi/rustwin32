@@ -27,7 +27,39 @@ pub struct Menu {
 pub struct Module {
     // TODO(zeffron 2016-08-15) We should use NonZero or equivalent once it
     // stabilizes
-    handle: winapi::HINSTANCE,
+    // FIXME(zeffron 2016-08-16) This is public for now to allow the sample to
+    // not need to pass in a module to register_class_extended. This seems to
+    // indicate that it is acceptable to pass a null module to
+    // RegisterClassEx, but that is based on a sample project which could be
+    // violating best practice.
+    // This need to stop being public, and can be done by either writing a
+    // function that will make them, or by optionally taking them (in the short
+    // term).
+    pub handle: winapi::HINSTANCE,
+}
+
+// TODO(zeffron 2016-08-15) Turn this into a fleshed out type with structs
+// and lifetime management.
+pub struct Icon {
+    // TODO(zeffron 2016-08-15) We should use NonZero or equivalent once it
+    // stabilizes
+    handle: winapi::HICON,
+}
+
+// TODO(zeffron 2016-08-15) Turn this into a fleshed out type with structs
+// and lifetime management.
+pub struct Cursor {
+    // TODO(zeffron 2016-08-15) We should use NonZero or equivalent once it
+    // stabilizes
+    handle: winapi::HCURSOR,
+}
+
+// TODO(zeffron 2016-08-15) Turn this into a fleshed out type with structs
+// and lifetime management.
+pub struct Brush {
+    // TODO(zeffron 2016-08-15) We should use NonZero or equivalent once it
+    // stabilizes
+    handle: winapi::HBRUSH,
 }
 
 bitflags! {
@@ -95,6 +127,8 @@ bitflags!{
 }
 
 pub enum WindowClassName {
+    // TODO(zeffron 2016-08-15) See if we can enforce the 256 character limit
+    // with the type system.
     String(String),
     Atom(u16),
 }
@@ -117,6 +151,8 @@ pub fn create_window_extended(
         Some(ref val) => Some(std::ffi::OsStr::new(&val).encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>()),
         None => None,
     };
+    // TODO(zeffron 2016-08-15) Check if this really can be null, or if that
+    // just means an atom of 0.
     let class_name_2 = match class_name {
         Some(WindowClassName::String(ref val)) => Some(std::ffi::OsStr::new(&val).encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>()),
         _ => None,
@@ -127,7 +163,7 @@ pub fn create_window_extended(
             match class_name_2 {
                 Some(ref val) => val.as_ptr(),
                 None => match class_name {
-                    Some(WindowClassName::Atom(val)) => val as winapi::LPCWSTR,
+                    Some(WindowClassName::Atom(atom)) => atom as winapi::LPCWSTR,
                     None => std::ptr::null_mut(),
                     _ => panic!("The string case should have been translated"),
                 }
@@ -141,26 +177,81 @@ pub fn create_window_extended(
             y.unwrap_or(winapi::CW_USEDEFAULT),
             width.unwrap_or(winapi::CW_USEDEFAULT),
             height.unwrap_or(winapi::CW_USEDEFAULT),
-            parent_window.unwrap_or(
-                Window {
-                    handle: std::ptr::null_mut(),
-                }
-            ).handle,
-            menu.unwrap_or(
-                Menu {
-                    handle: std::ptr::null_mut(),
-                }
-            ).handle,
-            module.unwrap_or(
-                Module {
-                    handle: std::ptr::null_mut(),
-                }
-            ).handle,
+            parent_window.unwrap_or(Window { handle: std::ptr::null_mut(), }).handle,
+            menu.unwrap_or(Menu { handle: std::ptr::null_mut(), }).handle,
+            module.unwrap_or(Module { handle: std::ptr::null_mut(), }).handle,
             parameter,
         )
     };
     match window_handle {
         val if val == std::ptr::null_mut() => Err(std::io::Error::last_os_error()),
         val => Ok(Window { handle: val }),
+    }
+}
+
+pub struct WindowClassExtended {
+    pub style : WindowClassStyle,
+    pub window_procedure : WindowProcedure,
+    pub class_extra : i32,
+    pub window_extra : i32,
+    // TODO(zeffron 2016-08-15) I think this can be null, but the documentation
+    // doesn't say so. It needs to be looked into. If it can't be null, we
+    // should use NonZero or equivalent when it stabilizes
+    pub module : Module,
+    pub icon : Option<Icon>,
+    pub cursor : Option<Cursor>,
+    pub background_brush : Option<Brush>,
+    pub menu_name : Option<String>,
+    pub class_name : WindowClassName,
+    pub small_icon : Option<Icon>,
+}
+
+bitflags! {
+    pub flags WindowClassStyle : u32 {
+        const BYTE_ALIGN_CLIENT = winapi::CS_BYTEALIGNCLIENT,
+        const BYTE_ALIGN_WINDOW = winapi::CS_BYTEALIGNWINDOW,
+        const CLASS_DEVICE_CONTEXT = winapi::CS_CLASSDC,
+        const DROP_SHADOW = winapi::CS_DROPSHADOW,
+        const DOUBLE_CLICKS = winapi::CS_DBLCLKS,
+        const GLOBAL_CLASS = winapi::CS_GLOBALCLASS,
+        const HORIZONTAL_REDRAW = winapi::CS_HREDRAW,
+        const NO_CLOSE = winapi::CS_NOCLOSE,
+        const OWN_DEVICE_CONTEXT = winapi::CS_OWNDC,
+        const PARENT_DEVICE_CONTEXT = winapi::CS_PARENTDC,
+        const SAVE_BITS = winapi::CS_SAVEBITS,
+        const VERTICAL_REDRAW = winapi::CS_VREDRAW,
+    }
+}
+
+// TODO(zeffron 2016-08-15) Figure out how to make this into a proper type.
+// It looks like to do it the way we want to we'll need to figure out how to
+// make a closure passable as a FFI callback
+pub type WindowProcedure = winapi::WNDPROC;
+
+pub fn register_class_extended(class : &WindowClassExtended) -> Result<u16, std::io::Error> {
+    let window_class = winapi::WNDCLASSEXW {
+        cbSize : std::mem::size_of::<winapi::WNDCLASSEXW>() as winapi::UINT,
+        style : class.style.bits(),
+        lpfnWndProc : class.window_procedure,
+        cbClsExtra : class.class_extra,
+        cbWndExtra : class.window_extra,
+        hInstance : class.module.handle,
+        hIcon : class.icon.as_ref().unwrap_or(&Icon { handle: std::ptr::null_mut() }).handle,
+        hCursor : class.cursor.as_ref().unwrap_or(&Cursor { handle: std::ptr::null_mut() }).handle,
+        hbrBackground : class.background_brush.as_ref().unwrap_or(&Brush { handle: std::ptr::null_mut() }).handle,
+        lpszMenuName : match class.menu_name {
+            Some(ref menu_name) => std::ffi::OsStr::new(&menu_name).encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>().as_ptr(),
+            None => std::ptr::null(),
+        },
+        lpszClassName : match class.class_name {
+            WindowClassName::String(ref class_name) => std::ffi::OsStr::new(&class_name).encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>().as_ptr(),
+            WindowClassName::Atom(atom) => atom as winapi::LPCWSTR,
+        },
+        hIconSm : class.small_icon.as_ref().unwrap_or(&Icon { handle: std::ptr::null_mut() }).handle,
+    };
+    let atom = unsafe { user32::RegisterClassExW(&window_class) };
+    match atom {
+        0 =>  Err(std::io::Error::last_os_error()),
+        val => Ok(val),
     }
 }
