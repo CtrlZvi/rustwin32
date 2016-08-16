@@ -1,0 +1,10 @@
+[package]
+name = "win32"
+version = "0.0.1"
+authors = ["Zvi \"CtrlZvi\" Effron <zeffron@cs.hmc.edu>"]
+
+publish = false
+
+[dependencies]
+winapi = "^0"
+d3d12-sys = "^0"
