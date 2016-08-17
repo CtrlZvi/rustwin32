@@ -1,6 +1,8 @@
 // Wrappers around items provided by Winuser.h, User32.lib, and User32.dll
 extern crate user32;
 
+use windef::*;
+
 use winapi;
 
 use std;
@@ -253,5 +255,13 @@ pub fn register_class_extended(class : &WindowClassExtended) -> Result<u16, std:
     match atom {
         0 =>  Err(std::io::Error::last_os_error()),
         val => Ok(val),
+    }
+}
+
+pub fn adjust_window_rectangle_extended(rect: &mut Rectangle, style: WindowStyle, has_menu: bool, extended_style: WindowStyleExtended) -> Result<(), std::io::Error> {
+    let result = unsafe { user32::AdjustWindowRectEx(rect, style.bits(), has_menu as i32, extended_style.bits())};
+    match result {
+        0 =>  Err(std::io::Error::last_os_error()),
+        _ => Ok(()),
     }
 }
