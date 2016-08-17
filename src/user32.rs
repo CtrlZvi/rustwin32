@@ -13,7 +13,10 @@ use std::os::windows::ffi::OsStrExt;
 pub struct Window {
     // TODO(zeffron 2016-08-15) We should use NonZero or equivalent once it
     // stabilizes
-    handle: winapi::HWND,
+    // FIXME(zeffron 2016-08-16) This is public for now to allow the sample to
+    // pass a Window to default_window_procedure while still taking a
+    // winapi::HWND as its parameter.
+    pub handle: winapi::HWND,
 }
 
 // TODO(zeffron 2016-08-15) Turn this into a fleshed out type with structs
@@ -263,5 +266,19 @@ pub fn adjust_window_rectangle_extended(rect: &mut Rectangle, style: WindowStyle
     match result {
         0 =>  Err(std::io::Error::last_os_error()),
         _ => Ok(()),
+    }
+}
+
+pub fn default_window_procedure(window: Option<Window>, message_identifier: u32, parameter1: u64, parameter2: i64) -> i64 {
+    unsafe {
+        user32::DefWindowProcW(
+            match window {
+                Some(window) => window.handle,
+                None => std::ptr::null_mut(),
+            },
+            message_identifier as winapi::UINT,
+            parameter1 as winapi::WPARAM,
+            parameter2 as winapi::LPARAM,
+        )
     }
 }
