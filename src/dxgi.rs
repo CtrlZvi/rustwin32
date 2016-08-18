@@ -60,6 +60,14 @@ pub struct IDXGIFactory1 {
 }
 
 impl IDXGIFactory1 {
+    #[inline]
+    pub fn enum_adapters_1(&self, adapter_index: u32) -> Result<IDXGIAdapter1, std::io::Error> {
+        let mut adapter: *mut winapi::IDXGIAdapter1 = unsafe { std::mem::uninitialized() };
+        match unsafe { (*self.ptr).EnumAdapters1(adapter_index, &mut adapter as *mut *mut winapi::IDXGIAdapter1) } {
+            winapi::S_OK => Ok(adapter.into()),
+            _ => panic!("{:?}", std::io::Error::last_os_error()),
+        }
+    }
 }
 
 impl Deref for IDXGIFactory1 {
@@ -114,6 +122,14 @@ pub struct IDXGIAdapter1 {
 }
 
 impl IDXGIAdapter1 {
+}
+
+impl From<*mut winapi::IDXGIAdapter1> for IDXGIAdapter1 {
+    fn from(source : *mut winapi::IDXGIAdapter1) -> Self {
+        IDXGIAdapter1 {
+            ptr: source as *mut winapi::IDXGIAdapter1,
+        }
+    }
 }
 
 impl Deref for IDXGIAdapter1 {
