@@ -140,7 +140,7 @@ pub enum WindowClassName {
 
 pub fn create_window_extended(
     extended_style : WindowStyleExtended,
-    class_name : Option<WindowClassName>,
+    class_name : WindowClassName,
     window_name : Option<String>,
     style : WindowStyle,
     x : Option<i32>,
@@ -156,22 +156,12 @@ pub fn create_window_extended(
         Some(ref val) => Some(std::ffi::OsStr::new(&val).encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>()),
         None => None,
     };
-    // TODO(zeffron 2016-08-15) Check if this really can be null, or if that
-    // just means an atom of 0.
-    let class_name_2 = match class_name {
-        Some(WindowClassName::String(ref val)) => Some(std::ffi::OsStr::new(&val).encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>()),
-        _ => None,
-    };
     let window_handle = unsafe {
         user32::CreateWindowExW(
             extended_style.bits() as u32,
-            match class_name_2 {
-                Some(ref val) => val.as_ptr(),
-                None => match class_name {
-                    Some(WindowClassName::Atom(atom)) => atom as winapi::LPCWSTR,
-                    None => std::ptr::null_mut(),
-                    _ => panic!("The string case should have been translated"),
-                }
+            match class_name {
+                WindowClassName::String(ref val) => std::ffi::OsStr::new(&val).encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>().as_ptr(),
+                WindowClassName::Atom(atom) => atom as *const u16,
             },
             match window_name {
                 Some(ref val) => val.as_ptr(),
@@ -237,7 +227,14 @@ pub fn register_class_extended(class : &WindowClassExtended) -> Result<u16, std:
     let window_class = winapi::WNDCLASSEXW {
         cbSize : std::mem::size_of::<winapi::WNDCLASSEXW>() as winapi::UINT,
         style : class.style.bits(),
-        lpfnWndProc : class.window_procedure,
+        lpfnWndProc : match class.window_procedure {
+            // TODO(zeffron 2016-08-16) We should have a compile time
+            // assertion that Window and winapi::HWND are the same size, if
+            // possible.
+            // If not, we should have a runtime assertion in debug builds.
+            Some(procedure) => unsafe { Some(std::mem::transmute(procedure)) },
+            None => None,
+        },
         cbClsExtra : class.class_extra,
         cbWndExtra : class.window_extra,
         hInstance : class.module.handle,
