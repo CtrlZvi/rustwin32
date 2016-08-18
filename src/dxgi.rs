@@ -85,3 +85,49 @@ pub fn create_dxgifactory1<T : DeclspecUUID + From<*mut std::os::raw::c_void>>()
          _ => panic!("{:?}", std::io::Error::last_os_error()),
      }
 }
+
+pub struct IDXGIAdapter {
+    ptr: *mut winapi::IDXGIAdapter,
+}
+
+impl IDXGIAdapter {
+}
+
+impl Deref for IDXGIAdapter {
+    type Target=IDXGIObject;
+
+    fn deref(&self) -> &IDXGIObject {
+        unsafe { &*(self as *const IDXGIAdapter as *const IDXGIObject) }
+    }
+}
+
+DEFINE_GUID! { IDXGIADAPTER_GUID, 0x2411e7e1, 0x12ac, 0x4ccf, 0xbd, 0x14, 0x97, 0x98, 0xe8, 0x53, 0x4d, 0xc0 }
+
+impl DeclspecUUID for IDXGIAdapter {
+    fn uuid() -> winapi::GUID {
+        IDXGIADAPTER_GUID
+    }
+}
+
+pub struct IDXGIAdapter1 {
+    ptr: *mut winapi::IDXGIAdapter1,
+}
+
+impl IDXGIAdapter1 {
+}
+
+impl Deref for IDXGIAdapter1 {
+    type Target=IDXGIAdapter;
+
+    fn deref(&self) -> &IDXGIAdapter {
+        unsafe { &*(self as *const IDXGIAdapter1 as *const IDXGIAdapter) }
+    }
+}
+
+DEFINE_GUID! { IDXGIADAPTER1_GUID, 0x29038f61, 0x3839, 0x4626, 0x91, 0xfd, 0x08, 0x68, 0x79, 0x01, 0x1a, 0x05 }
+
+impl DeclspecUUID for IDXGIAdapter1 {
+    fn uuid() -> winapi::GUID {
+        IDXGIADAPTER1_GUID
+    }
+}
