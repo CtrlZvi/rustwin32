@@ -8,6 +8,7 @@ use winapi;
 
 use std;
 use std::ops::Deref;
+use std::os::windows::ffi::OsStringExt;
 
 pub struct IDXGIObject {
     ptr: *mut winapi::IDXGIObject,
@@ -122,6 +123,14 @@ pub struct IDXGIAdapter1 {
 }
 
 impl IDXGIAdapter1 {
+    #[inline]
+    pub fn get_description_1(&self) -> Result<DXGIAdapterDescription1, std::io::Error> {
+        let mut description: winapi::DXGI_ADAPTER_DESC1 = unsafe { std::mem::uninitialized() };
+        match unsafe { (*self.ptr).GetDesc1(&mut description as *mut winapi::DXGI_ADAPTER_DESC1) } {
+            winapi::S_OK => Ok(description.into()),
+            _ => panic!("{:?}", std::io::Error::last_os_error()),
+        }
+    }
 }
 
 impl From<*mut winapi::IDXGIAdapter1> for IDXGIAdapter1 {
@@ -145,5 +154,46 @@ DEFINE_GUID! { IDXGIADAPTER1_GUID, 0x29038f61, 0x3839, 0x4626, 0x91, 0xfd, 0x08,
 impl DeclspecUUID for IDXGIAdapter1 {
     fn uuid() -> winapi::GUID {
         IDXGIADAPTER1_GUID
+    }
+}
+
+bitflags!{
+    pub flags DXGIAdapterFlag : u32 {
+        const NONE = 0,
+        const REMOTE = 1,
+        const SOFTWARE = 2,
+    }
+}
+
+pub struct DXGIAdapterDescription1 {
+    pub description: String,
+    pub vendor_id: u32,
+    pub device_id: u32,
+    pub sub_system_id: u32,
+    pub revision: u32,
+    pub dedicated_video_memory: usize,
+    pub dedicated_system_memory: usize,
+    pub shared_system_memory: usize,
+    // TODO(zeffron 2016-08-17): Replace the winapi types in the parameters
+    pub adapter_luid: winapi::LUID,
+    pub flags: DXGIAdapterFlag,
+}
+
+impl From<winapi::DXGI_ADAPTER_DESC1> for DXGIAdapterDescription1 {
+    fn from(source: winapi::DXGI_ADAPTER_DESC1) -> Self {
+        DXGIAdapterDescription1 {
+            // TODO(zeffron 2016-08-17): Handle the case where the string could not be converted
+            description: std::ffi::OsString::from_wide(source.Description.iter().take_while(|c| **c != 0).map(|c| *c).collect::<Vec<u16>>().as_slice()).into_string().unwrap(),
+            vendor_id: source.VendorId,
+            device_id: source.DeviceId,
+            sub_system_id: source.SubSysId,
+            revision: source.Revision,
+            dedicated_video_memory: source.DedicatedVideoMemory as usize,
+            dedicated_system_memory: source.DedicatedSystemMemory as usize,
+            shared_system_memory: source.SharedSystemMemory as usize,
+            adapter_luid: source.AdapterLuid,
+            // TODO(zeffron 2016-08-17): Handle the case where the flags are invalid
+            flags: DXGIAdapterFlag::from_bits(source.Flags).unwrap(),
+        }
     }
 }
