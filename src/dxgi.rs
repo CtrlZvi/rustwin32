@@ -77,3 +77,11 @@ impl DeclspecUUID for IDXGIFactory1 {
         IDXGIFACTORY1_GUID
     }
 }
+
+pub fn create_dxgifactory1<T : DeclspecUUID + From<*mut std::os::raw::c_void>>() -> Result<T, std::io::Error> {
+    let mut factory: *mut std::os::raw::c_void = unsafe { std::mem::uninitialized() };
+    match unsafe { dxgi::CreateDXGIFactory1(&T::uuid(), &mut factory as *mut *mut std::os::raw::c_void) } {
+         winapi::S_OK => Ok(factory.into()),
+         _ => panic!("{:?}", std::io::Error::last_os_error()),
+     }
+}
