@@ -23,7 +23,11 @@ impl IUnknown {
 
     #[inline(always)]
     pub fn release(&self) -> u32 {
-        unsafe {(*self.ptr).Release() }
+        unsafe { (*self.ptr).Release() }
+    }
+
+    pub unsafe fn as_ptr(&self) -> *mut winapi::IUnknown {
+        self.ptr
     }
 }
 

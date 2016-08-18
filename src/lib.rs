@@ -5,6 +5,7 @@ extern crate bitflags;
 
 pub use d3d12::*;
 pub use d3d12sdklayers::*;
+pub use d3dcommon::*;
 pub use declspec::*;
 pub use dxgi::*;
 pub use dxgi1_2::*;
@@ -16,6 +17,7 @@ pub use windef::*;
 
 mod d3d12;
 mod d3d12sdklayers;
+mod d3dcommon;
 mod declspec;
 mod dxgi;
 mod dxgi1_2;
