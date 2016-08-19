@@ -5,6 +5,8 @@ use d3dcommon::*;
 use declspec::*;
 use unknwn::*;
 
+use D3D12CommandQueueFlags;
+
 use winapi;
 
 use std;
@@ -77,6 +79,29 @@ pub struct ID3D12Device {
 }
 
 impl ID3D12Device {
+    pub fn create_command_queue<T>(&self, description: &D3D12CommandQueueDescription) -> Result<T, std::io::Error> where T: DeclspecUUID + From<*mut std::os::raw::c_void> {
+        let mut command_queue: *mut std::os::raw::c_void = unsafe { std::mem::uninitialized() };
+        match unsafe { (*self.ptr).CreateCommandQueue(
+            &winapi::D3D12_COMMAND_QUEUE_DESC {
+                Type: match description.list_type {
+                    D3D12CommandListType::Direct => winapi::D3D12_COMMAND_LIST_TYPE_DIRECT,
+                    D3D12CommandListType::Bundle => winapi::D3D12_COMMAND_LIST_TYPE_BUNDLE,
+                    D3D12CommandListType::Compute => winapi::D3D12_COMMAND_LIST_TYPE_COMPUTE,
+                    D3D12CommandListType::Copy => winapi::D3D12_COMMAND_LIST_TYPE_COPY,
+                },
+                Priority: description.priority,
+                Flags: winapi::D3D12_COMMAND_QUEUE_FLAGS(description.flags.bits()),
+                NodeMask: description.node_mask,
+            },
+            &T::uuid(),
+            &mut command_queue
+        ) } {
+            winapi::S_OK | winapi::S_FALSE => Ok(command_queue.into()),
+            // TODO(zeffron 2016-08-18): Implement an appropriate error type and
+            // switch to it
+            result => panic!("{:x}", result),
+        }
+    }
 }
 
 impl Deref for ID3D12Device {
@@ -101,4 +126,18 @@ impl DeclspecUUID for ID3D12Device {
     fn uuid() -> winapi::GUID {
         ID3D12DEVICE_GUID
     }
+}
+
+pub struct D3D12CommandQueueDescription {
+    pub list_type: D3D12CommandListType,
+    pub priority: i32,
+    pub flags: D3D12CommandQueueFlags::Flags,
+    pub node_mask: u32,
+}
+
+pub enum D3D12CommandListType {
+    Direct,
+    Bundle,
+    Compute,
+    Copy,
 }

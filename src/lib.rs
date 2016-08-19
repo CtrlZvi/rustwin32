@@ -26,3 +26,6 @@ mod dxgi1_4;
 mod unknwn;
 mod user32;
 mod windef;
+
+#[allow(non_snake_case)]
+pub mod D3D12CommandQueueFlags;
