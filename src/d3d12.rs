@@ -141,3 +141,80 @@ pub enum D3D12CommandListType {
     Compute,
     Copy,
 }
+
+pub struct ID3D12CommandQueue {
+    ptr: *mut winapi::ID3D12CommandQueue,
+}
+
+impl ID3D12CommandQueue {
+}
+
+impl From<*mut std::os::raw::c_void> for ID3D12CommandQueue {
+    fn from(source: *mut std::os::raw::c_void) -> Self {
+        ID3D12CommandQueue {
+            ptr: source as *mut winapi::ID3D12CommandQueue,
+        }
+    }
+}
+
+impl Deref for ID3D12CommandQueue {
+    type Target=ID3D12Pageable;
+
+    fn deref(&self) -> &ID3D12Pageable {
+        unsafe { &*(self as *const ID3D12CommandQueue as *const ID3D12Pageable) }
+    }
+}
+
+DEFINE_GUID! { ID3D12COMMANDQUEUE_GUID, 0x0ec870a6, 0x5d7e, 0x4c22, 0x8c, 0xfc, 0x5b, 0xaa, 0xe0, 0x76, 0x16, 0xed }
+
+impl DeclspecUUID for ID3D12CommandQueue {
+    fn uuid() -> winapi::GUID {
+        ID3D12COMMANDQUEUE_GUID
+    }
+}
+
+pub struct ID3D12Pageable {
+    ptr: *mut winapi::ID3D12Pageable,
+}
+
+impl ID3D12Pageable {
+}
+
+impl Deref for ID3D12Pageable {
+    type Target=ID3D12DeviceChild;
+
+    fn deref(&self) -> &ID3D12DeviceChild {
+        unsafe { &*(self as *const ID3D12Pageable as *const ID3D12DeviceChild) }
+    }
+}
+
+DEFINE_GUID! { ID3D12PAGEABLE, 0x63ee58fb, 0x1268, 0x4835, 0x86, 0xda, 0xf0, 0x08, 0xce, 0x62, 0xf0, 0xd6 }
+
+impl DeclspecUUID for ID3D12Pageable {
+    fn uuid() -> winapi::GUID {
+        ID3D12PAGEABLE
+    }
+}
+
+pub struct ID3D12DeviceChild {
+    ptr: *mut winapi::ID3D12DeviceChild,
+}
+
+impl ID3D12DeviceChild {
+}
+
+impl Deref for ID3D12DeviceChild {
+    type Target=ID3D12Object;
+
+    fn deref(&self) -> &ID3D12Object {
+        unsafe { &*(self as *const ID3D12DeviceChild as *const ID3D12Object) }
+    }
+}
+
+DEFINE_GUID! { ID3D12DEVICECHILD_GUID, 0x905db94b, 0xa00c, 0x4140, 0x9d, 0xf5, 0x2b, 0x64, 0xca, 0x9e, 0xa3, 0x57 }
+
+impl DeclspecUUID for ID3D12DeviceChild {
+    fn uuid() -> winapi::GUID {
+        ID3D12DEVICECHILD_GUID
+    }
+}
