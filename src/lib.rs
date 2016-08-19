@@ -11,6 +11,8 @@ pub use dxgi::*;
 pub use dxgi1_2::*;
 pub use dxgi1_3::*;
 pub use dxgi1_4::*;
+pub use dxgiformat::*;
+pub use dxgitype::*;
 pub use unknwn::*;
 pub use user32::*;
 pub use windef::*;
@@ -23,9 +25,15 @@ mod dxgi;
 mod dxgi1_2;
 mod dxgi1_3;
 mod dxgi1_4;
+mod dxgiformat;
+mod dxgitype;
 mod unknwn;
 mod user32;
 mod windef;
 
 #[allow(non_snake_case)]
 pub mod D3D12CommandQueueFlags;
+#[allow(non_snake_case)]
+pub mod DXGISwapChainFlags;
+#[allow(non_snake_case)]
+pub mod DXGIUsage;
