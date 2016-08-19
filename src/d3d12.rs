@@ -10,7 +10,8 @@ use D3D12CommandQueueFlags;
 use winapi;
 
 use std;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
+use std::os::windows::ffi::OsStrExt;
 
 pub fn d3d12_get_debug_interface<T : DeclspecUUID + From<*mut std::os::raw::c_void>>() -> Result<T, std::io::Error> {
     let mut debug : *mut std::os::raw::c_void = unsafe { std::mem::uninitialized() };
@@ -56,6 +57,18 @@ pub struct ID3D12Object {
 }
 
 impl ID3D12Object {
+    pub fn set_name(&mut self, name: &str) -> Result<(), std::io::Error> {
+        match unsafe {
+            (*self.ptr).SetName(
+                std::ffi::OsStr::new(name).encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>().as_ptr(),
+            )
+        } {
+            winapi::S_OK | winapi::S_FALSE => Ok(()),
+            // TODO(zeffron 2016-08-18): Implement an appropriate error type and
+            // switch to it
+            result => panic!("{:x}", result),
+        }
+    }
 }
 
 impl Deref for ID3D12Object {
@@ -165,6 +178,12 @@ impl Deref for ID3D12CommandQueue {
     }
 }
 
+impl DerefMut for ID3D12CommandQueue {
+    fn deref_mut(&mut self) -> &mut ID3D12Pageable {
+        unsafe { &mut*(self as *mut ID3D12CommandQueue as *mut ID3D12Pageable) }
+    }
+}
+
 DEFINE_GUID! { ID3D12COMMANDQUEUE_GUID, 0x0ec870a6, 0x5d7e, 0x4c22, 0x8c, 0xfc, 0x5b, 0xaa, 0xe0, 0x76, 0x16, 0xed }
 
 impl DeclspecUUID for ID3D12CommandQueue {
@@ -188,6 +207,12 @@ impl Deref for ID3D12Pageable {
     }
 }
 
+impl DerefMut for ID3D12Pageable {
+    fn deref_mut(&mut self) -> &mut ID3D12DeviceChild {
+        unsafe { &mut*(self as *mut ID3D12Pageable as *mut ID3D12DeviceChild) }
+    }
+}
+
 DEFINE_GUID! { ID3D12PAGEABLE, 0x63ee58fb, 0x1268, 0x4835, 0x86, 0xda, 0xf0, 0x08, 0xce, 0x62, 0xf0, 0xd6 }
 
 impl DeclspecUUID for ID3D12Pageable {
@@ -208,6 +233,12 @@ impl Deref for ID3D12DeviceChild {
 
     fn deref(&self) -> &ID3D12Object {
         unsafe { &*(self as *const ID3D12DeviceChild as *const ID3D12Object) }
+    }
+}
+
+impl DerefMut for ID3D12DeviceChild {
+    fn deref_mut(&mut self) -> &mut ID3D12Object {
+        unsafe { &mut*(self as *mut ID3D12DeviceChild as *mut ID3D12Object) }
     }
 }
 
