@@ -9,6 +9,7 @@ publish = false
 winapi = "^0"
 d3d12-sys = "^0"
 dxgi-sys = "^0"
+kernel32-sys = "^0"
 user32-sys = "^0"
 # TODO(zeffron 2016-08-15): bitflags is problematic because it creates
 # constants instead of values namespaced by an enum. We should find or create a
