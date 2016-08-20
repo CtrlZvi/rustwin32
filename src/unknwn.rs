@@ -15,10 +15,18 @@ impl IUnknown {
         unsafe { (*self.ptr).AddRef() }
     }
 
-    // TODO(zeffron 2016-08-15): Replace the winapi types in the parameters
     #[inline(always)]
-    pub fn query_interface(&self, riid: winapi::REFIID, object: *mut *mut winapi::c_void) -> winapi::HRESULT {
-        unsafe { (*self.ptr).QueryInterface(riid, object) }
+    pub fn query_interface<T>(&self) -> Result<T, std::io::Error> where T: DeclspecUUID + From<*mut std::os::raw::c_void> {
+        let mut interface: *mut std::os::raw::c_void = unsafe { std::mem::uninitialized() };
+        let result = unsafe { (*self.ptr).QueryInterface(&T::uuid(), &mut interface) };
+        match result {
+            winapi::S_OK => Ok(interface.into()),
+            // TODO(zeffron 2016-08-20): Figure out a better error type for
+            // HRESULTS and switch to it
+            winapi::E_NOINTERFACE => Err(std::io::Error::last_os_error()),
+            winapi::E_POINTER => Err(std::io::Error::last_os_error()),
+            result => panic!("{}", result),
+        }
     }
 
     #[inline(always)]
