@@ -269,3 +269,51 @@ win32_enum! {
 }
 
 pub const D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND: u32 = winapi::D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+pub enum D3D12RootParameterData<'a> {
+    DescriptorTable(D3D12RootDescriptorTable<'a>),
+    Constants(D3D12RootConstants),
+    Descriptor(D3D12RootDescriptor),
+}
+
+pub struct D3D12RootParameter<'a> {
+    pub parameter_type: D3D12RootParameterType,
+    pub data: D3D12RootParameterData<'a>,
+    pub shader_visibility: D3D12ShaderVisibility,
+}
+
+win32_enum! {
+    enum D3D12RootParameterType(winapi::D3D12_ROOT_PARAMETER_TYPE) {
+        DescriptorTable = winapi::D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
+        Constants32Bit = winapi::D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
+        CBV = winapi::D3D12_ROOT_PARAMETER_TYPE_CBV,
+        SRV= winapi::D3D12_ROOT_PARAMETER_TYPE_SRV,
+        UAV = winapi::D3D12_ROOT_PARAMETER_TYPE_UAV,
+    }
+}
+
+pub struct D3D12RootDescriptorTable<'a> {
+    pub ranges: &'a[D3D12DescriptorRange],
+}
+
+pub struct D3D12RootConstants {
+    pub shader_register: u32,
+    pub register_space: u32,
+    pub num_32bit_values: u32,
+}
+
+pub struct D3D12RootDescriptor {
+    pub shader_register: u32,
+    pub register_space: u32,
+}
+
+win32_enum! {
+    enum D3D12ShaderVisibility(winapi::D3D12_SHADER_VISIBILITY) {
+        All = winapi::D3D12_SHADER_VISIBILITY_ALL,
+        Vertex = winapi::D3D12_SHADER_VISIBILITY_VERTEX,
+        Hull = winapi::D3D12_SHADER_VISIBILITY_HULL,
+        Domain = winapi::D3D12_SHADER_VISIBILITY_DOMAIN,
+        Geometry = winapi::D3D12_SHADER_VISIBILITY_GEOMETRY,
+        Pixel = winapi::D3D12_SHADER_VISIBILITY_PIXEL,
+    }
+}
