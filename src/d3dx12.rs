@@ -32,7 +32,7 @@ impl CD3DX12RootParameter {
     ) -> D3D12RootParameter {
         D3D12RootParameter {
             parameter_type: D3D12RootParameterType::DescriptorTable,
-            data: D3D12RootParameterData::DescriptorTable(D3D12RootDescriptorTable {
+            union: D3D12RootParameterData::DescriptorTable(D3D12RootDescriptorTable {
                 ranges: descriptor_ranges,
             }),
             shader_visibility: visibility,
@@ -47,7 +47,7 @@ impl CD3DX12RootParameter {
     ) -> D3D12RootParameter<'a> {
         D3D12RootParameter {
             parameter_type: D3D12RootParameterType::Constants32Bit,
-            data: D3D12RootParameterData::Constants(D3D12RootConstants {
+            union: D3D12RootParameterData::Constants(D3D12RootConstants {
                 shader_register: shader_register,
                 register_space: register_space,
                 num_32bit_values: num_32bit_values,
@@ -63,7 +63,7 @@ impl CD3DX12RootParameter {
     ) -> D3D12RootParameter<'a> {
         D3D12RootParameter {
             parameter_type: D3D12RootParameterType::CBV,
-            data: D3D12RootParameterData::Descriptor(D3D12RootDescriptor {
+            union: D3D12RootParameterData::Descriptor(D3D12RootDescriptor {
                 shader_register: shader_register,
                 register_space: register_space,
             }),
@@ -78,7 +78,7 @@ impl CD3DX12RootParameter {
     ) -> D3D12RootParameter<'a> {
         D3D12RootParameter {
             parameter_type: D3D12RootParameterType::SRV,
-            data: D3D12RootParameterData::Descriptor(D3D12RootDescriptor {
+            union: D3D12RootParameterData::Descriptor(D3D12RootDescriptor {
                 shader_register: shader_register,
                 register_space: register_space,
             }),
@@ -93,7 +93,7 @@ impl CD3DX12RootParameter {
     ) -> D3D12RootParameter<'a> {
         D3D12RootParameter {
             parameter_type: D3D12RootParameterType::UAV,
-            data: D3D12RootParameterData::Descriptor(D3D12RootDescriptor {
+            union: D3D12RootParameterData::Descriptor(D3D12RootDescriptor {
                 shader_register: shader_register,
                 register_space: register_space,
             }),

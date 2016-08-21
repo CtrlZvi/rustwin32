@@ -2,6 +2,7 @@
 
 macro_rules! win32_enum {
     {enum $name:ident ($backing_type:path) { $($variant:ident = $value:expr,)+ } } => {
+        #[derive(Clone,Copy)]
         pub enum $name {
             $($variant),+
         }

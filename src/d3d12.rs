@@ -61,6 +61,9 @@ impl ID3D12Object {
     pub fn set_name(&mut self, name: &str) -> Result<(), std::io::Error> {
         match unsafe {
             (*self.ptr).SetName(
+                // FIXME(zeffron 2016-08-21): I think the lifetime here is
+                // incorrect. I don't think the vector we collect into survives
+                // long enough.
                 std::ffi::OsStr::new(name).encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>().as_ptr(),
             )
         } {
@@ -261,6 +264,18 @@ pub struct D3D12DescriptorRange {
     pub offset_in_descriptors_from_table_start: u32,
 }
 
+impl<'a> From<&'a D3D12DescriptorRange> for winapi::D3D12_DESCRIPTOR_RANGE {
+    fn from(source: &'a D3D12DescriptorRange) -> winapi::D3D12_DESCRIPTOR_RANGE {
+        winapi::D3D12_DESCRIPTOR_RANGE {
+            RangeType: source.range_type.into(),
+            NumDescriptors: source.num_descriptors,
+            BaseShaderRegister: source.base_shader_register,
+            RegisterSpace: source.register_space,
+            OffsetInDescriptorsFromTableStart: source.offset_in_descriptors_from_table_start,
+        }
+    }
+}
+
 win32_enum! {
     enum D3D12DescriptorRangeType(winapi::D3D12_DESCRIPTOR_RANGE_TYPE) {
         SRV = winapi::D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
@@ -277,10 +292,30 @@ pub enum D3D12RootParameterData<'a> {
     Descriptor(D3D12RootDescriptor),
 }
 
+impl<'a> From<&'a D3D12RootParameterData<'a>> for winapi::D3D12_ROOT_DESCRIPTOR_TABLE where winapi::D3D12_ROOT_DESCRIPTOR_TABLE: 'a {
+    fn from(source: &'a D3D12RootParameterData<'a>) -> winapi::D3D12_ROOT_DESCRIPTOR_TABLE where winapi::D3D12_ROOT_DESCRIPTOR_TABLE: 'a {
+        match *source {
+            D3D12RootParameterData::DescriptorTable(ref descriptor_table) => descriptor_table.into(),
+            D3D12RootParameterData::Constants(ref constants) => unsafe { *std::mem::transmute::<&winapi::D3D12_ROOT_CONSTANTS, &winapi::D3D12_ROOT_DESCRIPTOR_TABLE>(&constants.into()) },
+            D3D12RootParameterData::Descriptor(ref descriptor) => unsafe { *std::mem::transmute::<&winapi::D3D12_ROOT_DESCRIPTOR, &winapi::D3D12_ROOT_DESCRIPTOR_TABLE>(&descriptor.into()) },
+        }
+    }
+}
+
 pub struct D3D12RootParameter<'a> {
     pub parameter_type: D3D12RootParameterType,
-    pub data: D3D12RootParameterData<'a>,
+    pub union: D3D12RootParameterData<'a>,
     pub shader_visibility: D3D12ShaderVisibility,
+}
+
+impl<'a> From<&'a D3D12RootParameter<'a>> for winapi::D3D12_ROOT_PARAMETER where winapi::D3D12_ROOT_PARAMETER: 'a {
+    fn from(source: &'a D3D12RootParameter<'a>) -> winapi::D3D12_ROOT_PARAMETER where winapi::D3D12_ROOT_PARAMETER: 'a {
+        winapi::D3D12_ROOT_PARAMETER {
+            ParameterType: source.parameter_type.into(),
+            u: (&source.union).into(),
+            ShaderVisibility: source.shader_visibility.into(),
+        }
+    }
 }
 
 win32_enum! {
@@ -297,15 +332,46 @@ pub struct D3D12RootDescriptorTable<'a> {
     pub ranges: &'a[D3D12DescriptorRange],
 }
 
+impl<'a> From<&'a D3D12RootDescriptorTable<'a>> for winapi::D3D12_ROOT_DESCRIPTOR_TABLE where winapi::D3D12_ROOT_DESCRIPTOR_TABLE: 'a {
+    fn from(source: &'a D3D12RootDescriptorTable<'a>) -> winapi::D3D12_ROOT_DESCRIPTOR_TABLE where winapi::D3D12_ROOT_DESCRIPTOR_TABLE: 'a {
+        winapi::D3D12_ROOT_DESCRIPTOR_TABLE {
+            NumDescriptorRanges: source.ranges.len() as u32,
+            // FIXME(zeffron 2016-08-21): I think the lifetime here is
+            // incorrect. I don't think the vector we collect into survives
+            // long enough.
+            pDescriptorRanges: source.ranges.iter().map(|range| range.into()).collect::<Vec<winapi::D3D12_DESCRIPTOR_RANGE>>().as_ptr(),
+        }
+    }
+}
+
 pub struct D3D12RootConstants {
     pub shader_register: u32,
     pub register_space: u32,
     pub num_32bit_values: u32,
 }
 
+impl<'a> From<&'a D3D12RootConstants> for winapi::D3D12_ROOT_CONSTANTS {
+    fn from(source: &'a D3D12RootConstants) -> winapi::D3D12_ROOT_CONSTANTS {
+        winapi::D3D12_ROOT_CONSTANTS {
+            ShaderRegister: source.shader_register,
+            RegisterSpace: source.register_space,
+            Num32BitValues: source.num_32bit_values,
+        }
+    }
+}
+
 pub struct D3D12RootDescriptor {
     pub shader_register: u32,
     pub register_space: u32,
+}
+
+impl<'a> From<&'a D3D12RootDescriptor> for winapi::D3D12_ROOT_DESCRIPTOR {
+    fn from(source: &'a D3D12RootDescriptor) -> winapi::D3D12_ROOT_DESCRIPTOR {
+        winapi::D3D12_ROOT_DESCRIPTOR {
+            ShaderRegister: source.shader_register,
+            RegisterSpace: source.register_space,
+        }
+    }
 }
 
 win32_enum! {
@@ -325,13 +391,37 @@ pub struct D3D12RootSignatureDescription<'a> {
     pub flags: D3D12RootSignatureFlags::Flags,
 }
 
+impl<'a> From<&'a D3D12RootSignatureDescription<'a>> for winapi::D3D12_ROOT_SIGNATURE_DESC where winapi::D3D12_ROOT_SIGNATURE_DESC: 'a {
+    fn from(source: &'a D3D12RootSignatureDescription<'a>) -> winapi::D3D12_ROOT_SIGNATURE_DESC where winapi::D3D12_ROOT_SIGNATURE_DESC: 'a {
+        winapi::D3D12_ROOT_SIGNATURE_DESC {
+            NumParameters: source.parameters.len() as u32,
+            // FIXME(zeffron 2016-08-21): I think the lifetime here is
+            // incorrect. I don't think the vector we collect into survives
+            // long enough.
+            pParameters: source.parameters.iter().map(|parameter| parameter.into()).collect::<Vec<winapi::D3D12_ROOT_PARAMETER>>().as_ptr(),
+            NumStaticSamplers: match source.static_samplers {
+                Some(static_samplers) => static_samplers.len() as u32,
+                None => 0,
+            },
+            pStaticSamplers: match source.static_samplers {
+                // FIXME(zeffron 2016-08-21): I think the lifetime here is
+                // incorrect. I don't think the vector we collect into survives
+                // long enough.
+                Some(static_samplers) => static_samplers.iter().map(|sampler| sampler.into()).collect::<Vec<winapi::D3D12_STATIC_SAMPLER_DESC>>().as_ptr(),
+                None => std::ptr::null(),
+            },
+            Flags: winapi::D3D12_ROOT_SIGNATURE_FLAGS(source.flags.bits()),
+        }
+    }
+}
+
 pub struct D3D12StaticSamplerDescription {
     filter: D3D12Filter,
     address_u: D3D12TextureAddressMode,
     address_v: D3D12TextureAddressMode,
     address_w: D3D12TextureAddressMode,
     mip_lod_bias: f32,
-    max_anistropy: u32,
+    max_anisotropy: u32,
     comaprison_function: D3D12ComparisonFunction,
     border_color: D3D12StaticBorderColor,
     min_lod: f32,
@@ -339,6 +429,26 @@ pub struct D3D12StaticSamplerDescription {
     shader_register: u32,
     register_space: u32,
     shader_visibility: D3D12ShaderVisibility,
+}
+
+impl<'a> From<&'a D3D12StaticSamplerDescription> for winapi::D3D12_STATIC_SAMPLER_DESC {
+    fn from(source: &'a D3D12StaticSamplerDescription) -> winapi::D3D12_STATIC_SAMPLER_DESC {
+        winapi::D3D12_STATIC_SAMPLER_DESC {
+            Filter: source.filter.into(),
+            AddressU: source.address_u.into(),
+            AddressV: source.address_v.into(),
+            AddressW: source.address_w.into(),
+            MipLODBias: source.mip_lod_bias,
+            MaxAnisotropy: source.max_anisotropy,
+            ComparisonFunc: source.comaprison_function.into(),
+            BorderColor: source.border_color.into(),
+            MinLOD: source.min_lod,
+            MaxLOD: source.max_lod,
+            ShaderRegister: source.shader_register,
+            RegisterSpace: source.register_space,
+            ShaderVisibility: source.shader_visibility.into(),
+        }
+    }
 }
 
 win32_enum! {
@@ -410,5 +520,34 @@ win32_enum! {
         TransparentBlack = winapi::D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK,
         OpaqueBlack = winapi::D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK,
         OpaqueWhite = winapi::D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+    }
+}
+
+// TODO(zeffron 2016-08-21): Figure out a better way to send back to error
+// objects
+pub fn d3d12_serialize_root_signature(
+    root_signature: &D3D12RootSignatureDescription,
+    version: D3DRootSignatureVersion,
+) -> Result<ID3DBlob, (std::io::Error, Option<ID3DBlob>)> {
+    let mut blob: *mut winapi::ID3DBlob = unsafe { std::mem::uninitialized() };
+    let mut error: *mut winapi::ID3DBlob = unsafe { std::mem::uninitialized() };
+    match unsafe { d3d12::D3D12SerializeRootSignature(
+        &root_signature.into(),
+        version.into(),
+        &mut blob,
+        &mut error,
+    ) } {
+        winapi::S_OK => Ok(blob.into()),
+        result => panic!("{:x}", result),
+    }
+}
+
+win32_enum! {
+    enum D3DRootSignatureVersion(winapi::D3D_ROOT_SIGNATURE_VERSION) {
+        Version1 = winapi::D3D_ROOT_SIGNATURE_VERSION_1,
+        // TODO(zeffron 2016-08-19): Switch to winapi::D3D_ROOT_SIGNATURE_VERSION_1_0 once it exists
+        Version10 = winapi::D3D_ROOT_SIGNATURE_VERSION(0x1),
+        // TODO(zeffron 2016-08-19): Switch to winapi::D3D_ROOT_SIGNATURE_VERSION_1_1 once it exists
+        Version11 = winapi::D3D_ROOT_SIGNATURE_VERSION(0x2),
     }
 }
