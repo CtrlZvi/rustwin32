@@ -19,6 +19,8 @@ pub use unknwn::*;
 pub use user32::*;
 pub use windef::*;
 
+#[macro_use]
+mod macros;
 mod d3d12;
 mod d3d12sdklayers;
 mod d3dcommon;

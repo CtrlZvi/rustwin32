@@ -59,16 +59,10 @@ impl DeclspecUUID for IDXGIFactory5 {
     }
 }
 
-pub enum DXGIFeature {
-    AllowTearing,
-}
-
 // TODO(zeffron 2016-08-20): Once dxgi1_5 is added to winapi, use that instead
-impl From<DXGIFeature> for winapi_ext::DXGI_FEATURE {
-    fn from(source: DXGIFeature) -> winapi_ext::DXGI_FEATURE {
-        match source {
-            DXGIFeature::AllowTearing => winapi_ext::DXGI_FEATURE_ALLOW_TEARING,
-        }
+win32_enum! {
+    enum DXGIFeature(winapi_ext::DXGI_FEATURE) {
+        AllowTearing = winapi_ext::DXGI_FEATURE_ALLOW_TEARING,
     }
 }
 

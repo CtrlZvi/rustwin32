@@ -198,22 +198,12 @@ impl From<winapi::DXGI_ADAPTER_DESC1> for DXGIAdapterDescription1 {
     }
 }
 
-pub enum DXGISwapEffect {
-    Discard,
-    Sequential,
-    FlipSequential,
-    FlipDiscard,
-}
-
-impl From<DXGISwapEffect> for winapi::DXGI_SWAP_EFFECT {
-    fn from(source: DXGISwapEffect) -> winapi::DXGI_SWAP_EFFECT {
-        match source {
-            DXGISwapEffect::Discard => winapi::DXGI_SWAP_EFFECT_DISCARD,
-            DXGISwapEffect::Sequential => winapi::DXGI_SWAP_EFFECT_SEQUENTIAL,
-            DXGISwapEffect::FlipSequential => winapi::DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL,
-            // TODO(zeffron 2016-08-19): Switch to
-            // winapi::DXGI_SWAP_EFFECT_FLIP_DISCARD once it exists
-            DXGISwapEffect::FlipDiscard => winapi::DXGI_SWAP_EFFECT(4),
-        }
+win32_enum! {
+    enum DXGISwapEffect(winapi::DXGI_SWAP_EFFECT) {
+        Discard = winapi::DXGI_SWAP_EFFECT_DISCARD,
+        Sequential = winapi::DXGI_SWAP_EFFECT_SEQUENTIAL,
+        FlipSequential = winapi::DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL,
+        // TODO(zeffron 2016-08-19): Switch to winapi::DXGI_SWAP_EFFECT_FLIP_DISCARD once it exists
+        FlipDiscard = winapi::DXGI_SWAP_EFFECT(4),
     }
 }

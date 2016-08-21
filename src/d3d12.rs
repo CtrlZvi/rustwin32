@@ -148,11 +148,13 @@ pub struct D3D12CommandQueueDescription {
     pub node_mask: u32,
 }
 
-pub enum D3D12CommandListType {
-    Direct,
-    Bundle,
-    Compute,
-    Copy,
+win32_enum! {
+    enum D3D12CommandListType(winapi::D3D12_COMMAND_LIST_TYPE) {
+        Direct = winapi::D3D12_COMMAND_LIST_TYPE_DIRECT,
+        Bundle = winapi::D3D12_COMMAND_LIST_TYPE_BUNDLE,
+        Compute = winapi::D3D12_COMMAND_LIST_TYPE_COMPUTE,
+        Copy = winapi::D3D12_COMMAND_LIST_TYPE_COPY,
+    }
 }
 
 pub struct ID3D12CommandQueue {

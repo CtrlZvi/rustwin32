@@ -49,36 +49,19 @@ pub struct DXGISwapChainDescription1 {
     pub flags: DXGISwapChainFlags::Flags,
 }
 
-pub enum DXGIScaling {
-    Stretch,
-    None,
-    AspectRatioStretch,
-}
-
-impl From<DXGIScaling> for winapi::DXGI_SCALING {
-    fn from(source: DXGIScaling) -> winapi::DXGI_SCALING {
-        match source {
-            DXGIScaling::Stretch => winapi::DXGI_SCALING_STRETCH,
-            DXGIScaling::None => winapi::DXGI_SCALING_NONE,
-            DXGIScaling::AspectRatioStretch => winapi::DXGI_SCALING_ASPECT_RATIO_STRETCH,
-        }
+win32_enum! {
+    enum DXGIScaling(winapi::DXGI_SCALING) {
+        Stretch = winapi::DXGI_SCALING_STRETCH,
+        None = winapi::DXGI_SCALING_NONE,
+        AspectRatioStretch = winapi::DXGI_SCALING_ASPECT_RATIO_STRETCH,
     }
 }
 
-pub enum DXGIAlphaMode {
-    Unspecified,
-    Premultiplied,
-    Straight,
-    Ignore,
-}
-
-impl From<DXGIAlphaMode> for winapi::DXGI_ALPHA_MODE {
-    fn from(source: DXGIAlphaMode) -> winapi::DXGI_ALPHA_MODE {
-        match source {
-            DXGIAlphaMode::Unspecified => winapi::DXGI_ALPHA_MODE_UNSPECIFIED,
-            DXGIAlphaMode::Premultiplied => winapi::DXGI_ALPHA_MODE_PREMULTIPLIED,
-            DXGIAlphaMode::Straight => winapi::DXGI_ALPHA_MODE_STRAIGHT,
-            DXGIAlphaMode::Ignore => winapi::DXGI_ALPHA_MODE_IGNORE,
-        }
+win32_enum! {
+    enum DXGIAlphaMode(winapi::DXGI_ALPHA_MODE) {
+        Unspecified = winapi::DXGI_ALPHA_MODE_UNSPECIFIED,
+        Premultiplied = winapi::DXGI_ALPHA_MODE_PREMULTIPLIED,
+        Straight = winapi::DXGI_ALPHA_MODE_STRAIGHT,
+        Ignore = winapi::DXGI_ALPHA_MODE_IGNORE,
     }
 }
