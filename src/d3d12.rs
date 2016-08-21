@@ -251,3 +251,21 @@ impl DeclspecUUID for ID3D12DeviceChild {
         ID3D12DEVICECHILD_GUID
     }
 }
+
+pub struct D3D12DescriptorRange {
+    pub range_type: D3D12DescriptorRangeType,
+    pub num_descriptors: u32,
+    pub base_shader_register: u32,
+    pub register_space: u32,
+    pub offset_in_descriptors_from_table_start: u32,
+}
+
+win32_enum! {
+    enum D3D12DescriptorRangeType(winapi::D3D12_DESCRIPTOR_RANGE_TYPE) {
+        SRV = winapi::D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+        UAV = winapi::D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
+        CBV = winapi::D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
+    }
+}
+
+pub const D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND: u32 = winapi::D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
