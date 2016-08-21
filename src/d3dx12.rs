@@ -1,6 +1,8 @@
 // Wrappers around items provided by D3dx12.h
 use d3d12::*;
 
+use D3D12RootSignatureFlags;
+
 pub struct CD3DX12DescriptorRange;
 
 impl CD3DX12DescriptorRange {
@@ -96,6 +98,22 @@ impl CD3DX12RootParameter {
                 register_space: register_space,
             }),
             shader_visibility: visibility,
+        }
+    }
+}
+
+pub struct CD3DX12RootSignatureDescription;
+
+impl CD3DX12RootSignatureDescription {
+    pub fn init<'a>(
+        parameters: &'a[D3D12RootParameter],
+        static_samplers: Option<&'a[D3D12StaticSamplerDescription]>,
+        flags: D3D12RootSignatureFlags::Flags,
+    ) -> D3D12RootSignatureDescription<'a> {
+        D3D12RootSignatureDescription {
+            parameters: parameters,
+            static_samplers: static_samplers,
+            flags: flags,
         }
     }
 }

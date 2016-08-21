@@ -6,6 +6,7 @@ use declspec::*;
 use unknwn::*;
 
 use D3D12CommandQueueFlags;
+use D3D12RootSignatureFlags;
 
 use winapi;
 
@@ -315,5 +316,99 @@ win32_enum! {
         Domain = winapi::D3D12_SHADER_VISIBILITY_DOMAIN,
         Geometry = winapi::D3D12_SHADER_VISIBILITY_GEOMETRY,
         Pixel = winapi::D3D12_SHADER_VISIBILITY_PIXEL,
+    }
+}
+
+pub struct D3D12RootSignatureDescription<'a> {
+    pub parameters: &'a[D3D12RootParameter<'a>],
+    pub static_samplers: Option<&'a[D3D12StaticSamplerDescription]>,
+    pub flags: D3D12RootSignatureFlags::Flags,
+}
+
+pub struct D3D12StaticSamplerDescription {
+    filter: D3D12Filter,
+    address_u: D3D12TextureAddressMode,
+    address_v: D3D12TextureAddressMode,
+    address_w: D3D12TextureAddressMode,
+    mip_lod_bias: f32,
+    max_anistropy: u32,
+    comaprison_function: D3D12ComparisonFunction,
+    border_color: D3D12StaticBorderColor,
+    min_lod: f32,
+    max_lod: f32,
+    shader_register: u32,
+    register_space: u32,
+    shader_visibility: D3D12ShaderVisibility,
+}
+
+win32_enum! {
+    enum D3D12Filter(winapi::D3D12_FILTER) {
+        MinMagMipPoint = winapi::D3D12_FILTER_MIN_MAG_MIP_POINT,
+        MinMagPointMipLinear = winapi::D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR,
+        MinPointMagLinearMipPoint = winapi::D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT,
+        MinPointMagMipLinear = winapi::D3D12_FILTER_MIN_POINT_MAG_MIP_LINEAR,
+        MinLinearMagMipPoint = winapi::D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT,
+        MinLinearMagPointMipLinear = winapi::D3D12_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR,
+        MinMagLinearMipPoint = winapi::D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT,
+        MinMagMipLinear = winapi::D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+        Anisotropic = winapi::D3D12_FILTER_ANISOTROPIC,
+        ComparisonMinMagMipPoint = winapi::D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT,
+        ComparisonMinMagPointMipLinear = winapi::D3D12_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR,
+        ComparisonMinPointMagLinearMipPoint = winapi::D3D12_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT,
+        ComparisonMinPointMagMipLinear = winapi::D3D12_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR,
+        ComparisonMinLinearMagMipPoint = winapi::D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT,
+        ComparisonMinLinearMagPointMipLinear = winapi::D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR,
+        ComparisonMinMagLinearMipPoint = winapi::D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT,
+        ComparisonMinMagMipLinear = winapi::D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR,
+        ComparisonAnisotropic = winapi::D3D12_FILTER_COMPARISON_ANISOTROPIC,
+        MinimumMinMagMipPoint = winapi::D3D12_FILTER_MINIMUM_MIN_MAG_MIP_POINT,
+        MinimumMinMagPointMipLinear = winapi::D3D12_FILTER_MINIMUM_MIN_MAG_POINT_MIP_LINEAR,
+        MinimumMinPointMagLinearMipPoint = winapi::D3D12_FILTER_MINIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT,
+        MinimumMinPointMagMipLinear = winapi::D3D12_FILTER_MINIMUM_MIN_POINT_MAG_MIP_LINEAR,
+        MinimumMinLinearMagMipPoint = winapi::D3D12_FILTER_MINIMUM_MIN_LINEAR_MAG_MIP_POINT,
+        MinimumMinLinearMagPointMipLinear = winapi::D3D12_FILTER_MINIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR,
+        MinimumMinMagLinearMipPoint = winapi::D3D12_FILTER_MINIMUM_MIN_MAG_LINEAR_MIP_POINT,
+        MinimumMinMagMipLinear = winapi::D3D12_FILTER_MINIMUM_MIN_MAG_MIP_LINEAR,
+        MinimumAnisotropic = winapi::D3D12_FILTER_MINIMUM_ANISOTROPIC,
+        MaximumMinMagMipPoint = winapi::D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_POINT,
+        MaximumMinMagPointMipLinear = winapi::D3D12_FILTER_MAXIMUM_MIN_MAG_POINT_MIP_LINEAR,
+        MaximumMinPointMagLinearMipPoint = winapi::D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT,
+        MaximumMinPointMagMipLinear = winapi::D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_MIP_LINEAR,
+        MaximumMinLinearMagMipPoint = winapi::D3D12_FILTER_MAXIMUM_MIN_LINEAR_MAG_MIP_POINT,
+        MaximumMinLinearMagPointMipLinear = winapi::D3D12_FILTER_MAXIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR,
+        MaximumMinMagLinearMipPoint = winapi::D3D12_FILTER_MAXIMUM_MIN_MAG_LINEAR_MIP_POINT,
+        MaximumMinMagMipLinear = winapi::D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_LINEAR,
+        MaximumAnisotropic = winapi::D3D12_FILTER_MAXIMUM_ANISOTROPIC,
+    }
+}
+
+win32_enum! {
+    enum D3D12TextureAddressMode(winapi::D3D12_TEXTURE_ADDRESS_MODE) {
+        Wrap = winapi::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+        Mirror = winapi::D3D12_TEXTURE_ADDRESS_MODE_MIRROR,
+        Clamp = winapi::D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+        Border = winapi::D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+        MirrorOnce = winapi::D3D12_TEXTURE_ADDRESS_MODE_MIRROR_ONCE,
+    }
+}
+
+win32_enum! {
+    enum D3D12ComparisonFunction(winapi::D3D12_COMPARISON_FUNC) {
+        Never = winapi::D3D12_COMPARISON_FUNC_NEVER,
+        Less = winapi::D3D12_COMPARISON_FUNC_LESS,
+        Equal = winapi::D3D12_COMPARISON_FUNC_EQUAL,
+        LessEqual = winapi::D3D12_COMPARISON_FUNC_LESS_EQUAL,
+        Greater = winapi::D3D12_COMPARISON_FUNC_GREATER,
+        NotEqual = winapi::D3D12_COMPARISON_FUNC_NOT_EQUAL,
+        GreaterEqual = winapi::D3D12_COMPARISON_FUNC_GREATER_EQUAL,
+        Always = winapi::D3D12_COMPARISON_FUNC_ALWAYS,
+    }
+}
+
+win32_enum! {
+    enum D3D12StaticBorderColor(winapi::D3D12_STATIC_BORDER_COLOR) {
+        TransparentBlack = winapi::D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK,
+        OpaqueBlack = winapi::D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK,
+        OpaqueWhite = winapi::D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
     }
 }

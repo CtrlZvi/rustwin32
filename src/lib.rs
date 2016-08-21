@@ -42,6 +42,8 @@ mod windef;
 #[allow(non_snake_case)]
 pub mod D3D12CommandQueueFlags;
 #[allow(non_snake_case)]
+pub mod D3D12RootSignatureFlags;
+#[allow(non_snake_case)]
 pub mod DXGISwapChainFlags;
 #[allow(non_snake_case)]
 pub mod DXGIUsage;
