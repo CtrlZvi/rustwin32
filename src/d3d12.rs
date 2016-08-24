@@ -1,5 +1,6 @@
 // Wrappers around items provided by D3D12.h, D3D12.lib and D3D12.dll
 extern crate d3d12;
+extern crate dxguid;
 
 use d3dcommon::*;
 use declspec::*;
@@ -116,6 +117,14 @@ impl ID3D12Device {
             winapi::S_OK | winapi::S_FALSE => Ok(command_queue.into()),
             // TODO(zeffron 2016-08-18): Implement an appropriate error type and
             // switch to it
+            result => panic!("{:x}", result),
+        }
+    }
+
+    pub fn create_root_signature<T>(&self, node_mask: u32, blob_with_root_signature: &(), blob_length_in_bytes: usize) -> Result<T, std::io::Error> where T: DeclspecUUID + From<*mut std::os::raw::c_void> {
+        let mut root_signature: *mut std::os::raw::c_void = unsafe { std::mem::uninitialized() };
+        match unsafe { (*self.ptr).CreateRootSignature(node_mask, blob_with_root_signature as *const () as *const std::os::raw::c_void, blob_length_in_bytes as u64, &T::uuid(), &mut root_signature as *mut *mut std::os::raw::c_void) } {
+            winapi::S_OK | winapi::S_FALSE => Ok(root_signature.into()),
             result => panic!("{:x}", result),
         }
     }
@@ -292,8 +301,8 @@ pub enum D3D12RootParameterData<'a> {
     Descriptor(D3D12RootDescriptor),
 }
 
-impl<'a> From<&'a D3D12RootParameterData<'a>> for winapi::D3D12_ROOT_DESCRIPTOR_TABLE where winapi::D3D12_ROOT_DESCRIPTOR_TABLE: 'a {
-    fn from(source: &'a D3D12RootParameterData<'a>) -> winapi::D3D12_ROOT_DESCRIPTOR_TABLE where winapi::D3D12_ROOT_DESCRIPTOR_TABLE: 'a {
+impl<'a, 'b> From<&'a D3D12RootParameterData<'a>> for winapi::D3D12_ROOT_DESCRIPTOR_TABLE where winapi::D3D12_ROOT_DESCRIPTOR_TABLE: 'b, 'b: 'a {
+    fn from(source: &'a D3D12RootParameterData<'a>) -> winapi::D3D12_ROOT_DESCRIPTOR_TABLE where winapi::D3D12_ROOT_DESCRIPTOR_TABLE: 'b, 'b: 'a {
         match *source {
             D3D12RootParameterData::DescriptorTable(ref descriptor_table) => descriptor_table.into(),
             D3D12RootParameterData::Constants(ref constants) => unsafe { *std::mem::transmute::<&winapi::D3D12_ROOT_CONSTANTS, &winapi::D3D12_ROOT_DESCRIPTOR_TABLE>(&constants.into()) },
@@ -387,27 +396,46 @@ win32_enum! {
 
 pub struct D3D12RootSignatureDescription<'a> {
     pub parameters: &'a[D3D12RootParameter<'a>],
+    win32_parameters: Option<Vec<winapi::D3D12_ROOT_PARAMETER>>,
     pub static_samplers: Option<&'a[D3D12StaticSamplerDescription]>,
+    win32_static_samplers: Option<Vec<winapi::D3D12_STATIC_SAMPLER_DESC>>,
     pub flags: D3D12RootSignatureFlags::Flags,
 }
 
-impl<'a> From<&'a D3D12RootSignatureDescription<'a>> for winapi::D3D12_ROOT_SIGNATURE_DESC where winapi::D3D12_ROOT_SIGNATURE_DESC: 'a {
-    fn from(source: &'a D3D12RootSignatureDescription<'a>) -> winapi::D3D12_ROOT_SIGNATURE_DESC where winapi::D3D12_ROOT_SIGNATURE_DESC: 'a {
+impl<'a> D3D12RootSignatureDescription<'a> {
+    pub fn new(parameters: &'a[D3D12RootParameter<'a>], static_samplers: Option<&'a[D3D12StaticSamplerDescription]>, flags: D3D12RootSignatureFlags::Flags) -> Self {
+        D3D12RootSignatureDescription {
+            parameters: parameters,
+            win32_parameters: None,
+            static_samplers: static_samplers,
+            win32_static_samplers: None,
+            flags: flags,
+        }
+    }
+}
+
+impl<'a> From<&'a mut D3D12RootSignatureDescription<'a>> for winapi::D3D12_ROOT_SIGNATURE_DESC {
+    fn from(source: &'a mut D3D12RootSignatureDescription<'a>) -> winapi::D3D12_ROOT_SIGNATURE_DESC {
+        source.win32_parameters = Some(source.parameters.iter().map(|parameter| parameter.into()).collect());
+        source.win32_static_samplers = match source.static_samplers {
+            Some(static_samplers) => Some(static_samplers.iter().map(|sampler| sampler.into()).collect::<Vec<winapi::D3D12_STATIC_SAMPLER_DESC>>()),
+            None => None,
+        };
         winapi::D3D12_ROOT_SIGNATURE_DESC {
-            NumParameters: source.parameters.len() as u32,
-            // FIXME(zeffron 2016-08-21): I think the lifetime here is
-            // incorrect. I don't think the vector we collect into survives
-            // long enough.
-            pParameters: source.parameters.iter().map(|parameter| parameter.into()).collect::<Vec<winapi::D3D12_ROOT_PARAMETER>>().as_ptr(),
-            NumStaticSamplers: match source.static_samplers {
-                Some(static_samplers) => static_samplers.len() as u32,
+            NumParameters: match source.win32_parameters {
+                Some(ref parameters) => parameters.len() as u32,
+                None => unreachable!(),
+            },
+            pParameters: match source.win32_parameters {
+                Some(ref parameters) => parameters.as_ptr(),
+                None => unreachable!(),
+            },
+            NumStaticSamplers: match source.win32_static_samplers {
+                Some(ref static_samplers) => static_samplers.len() as u32,
                 None => 0,
             },
-            pStaticSamplers: match source.static_samplers {
-                // FIXME(zeffron 2016-08-21): I think the lifetime here is
-                // incorrect. I don't think the vector we collect into survives
-                // long enough.
-                Some(static_samplers) => static_samplers.iter().map(|sampler| sampler.into()).collect::<Vec<winapi::D3D12_STATIC_SAMPLER_DESC>>().as_ptr(),
+            pStaticSamplers: match source.win32_static_samplers {
+                Some(ref static_samplers) => static_samplers.as_ptr(),
                 None => std::ptr::null(),
             },
             Flags: winapi::D3D12_ROOT_SIGNATURE_FLAGS(source.flags.bits()),
@@ -525,10 +553,10 @@ win32_enum! {
 
 // TODO(zeffron 2016-08-21): Figure out a better way to send back to error
 // objects
-pub fn d3d12_serialize_root_signature(
-    root_signature: &D3D12RootSignatureDescription,
+pub fn d3d12_serialize_root_signature<'a>(
+    root_signature: &'a mut D3D12RootSignatureDescription<'a>,
     version: D3DRootSignatureVersion,
-) -> Result<ID3DBlob, (std::io::Error, Option<ID3DBlob>)> {
+) -> Result<ID3DBlob, (std::io::Error, Option<ID3DBlob>)>{
     let mut blob: *mut winapi::ID3DBlob = unsafe { std::mem::uninitialized() };
     let mut error: *mut winapi::ID3DBlob = unsafe { std::mem::uninitialized() };
     match unsafe { d3d12::D3D12SerializeRootSignature(
@@ -549,5 +577,34 @@ win32_enum! {
         Version10 = winapi::D3D_ROOT_SIGNATURE_VERSION(0x1),
         // TODO(zeffron 2016-08-19): Switch to winapi::D3D_ROOT_SIGNATURE_VERSION_1_1 once it exists
         Version11 = winapi::D3D_ROOT_SIGNATURE_VERSION(0x2),
+    }
+}
+
+pub struct ID3D12RootSignature {
+    ptr: *mut winapi::ID3D12RootSignature,
+}
+
+impl ID3D12RootSignature {
+}
+
+impl From<*mut std::os::raw::c_void> for ID3D12RootSignature {
+    fn from(source: *mut std::os::raw::c_void) -> Self {
+        ID3D12RootSignature {
+            ptr: source as *mut winapi::ID3D12RootSignature,
+        }
+    }
+}
+
+impl Deref for ID3D12RootSignature {
+    type Target=ID3D12DeviceChild;
+
+    fn deref(&self) -> &ID3D12DeviceChild {
+        unsafe { &*(self as *const ID3D12RootSignature as *const ID3D12DeviceChild) }
+    }
+}
+
+impl DeclspecUUID for ID3D12RootSignature {
+    fn uuid() -> winapi::GUID {
+        dxguid::IID_ID3D12RootSignature
     }
 }

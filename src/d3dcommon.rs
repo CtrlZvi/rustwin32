@@ -6,6 +6,7 @@ use unknwn::*;
 
 use winapi;
 
+use std;
 use std::ops::Deref;
 
 win32_enum! {
@@ -30,6 +31,13 @@ pub struct ID3D10Blob {
 }
 
 impl ID3D10Blob {
+    pub fn get_buffer_pointer(&self) -> &() {
+        unsafe { &*((*self.ptr).GetBufferPointer() as *const std::os::raw::c_void as *const ()) }
+    }
+
+    pub fn get_buffer_size(&self) -> usize {
+        unsafe { (*self.ptr).GetBufferSize() as usize }
+    }
 }
 
 impl From<*mut winapi::ID3D10Blob> for ID3D10Blob {

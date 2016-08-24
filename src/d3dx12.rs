@@ -110,10 +110,10 @@ impl CD3DX12RootSignatureDescription {
         static_samplers: Option<&'a[D3D12StaticSamplerDescription]>,
         flags: D3D12RootSignatureFlags::Flags,
     ) -> D3D12RootSignatureDescription<'a> {
-        D3D12RootSignatureDescription {
-            parameters: parameters,
-            static_samplers: static_samplers,
-            flags: flags,
-        }
+        D3D12RootSignatureDescription::new(
+            parameters,
+            static_samplers,
+            flags,
+        )
     }
 }
