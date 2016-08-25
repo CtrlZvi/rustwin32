@@ -6,7 +6,7 @@ use winapi;
 use std;
 
 pub struct IUnknown {
-    ptr: *mut winapi::IUnknown,
+    pub ptr: *mut winapi::IUnknown,
 }
 
 impl IUnknown {

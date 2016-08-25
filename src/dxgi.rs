@@ -1,5 +1,6 @@
 // Wrappers around items provided by DXGI.h, DXGI.lib, and Dxgi.dll
 extern crate dxgi;
+extern crate dxguid;
 
 use declspec::*;
 use unknwn::*;
@@ -205,5 +206,68 @@ win32_enum! {
         FlipSequential = winapi::DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL,
         // TODO(zeffron 2016-08-19): Switch to winapi::DXGI_SWAP_EFFECT_FLIP_DISCARD once it exists
         FlipDiscard = winapi::DXGI_SWAP_EFFECT(4),
+    }
+}
+
+pub struct IDXGIOutput {
+    ptr: *mut winapi::IDXGIOutput,
+}
+
+impl IDXGIOutput {
+}
+
+impl Deref for IDXGIOutput {
+    type Target=IDXGIObject;
+
+    fn deref(&self) -> &IDXGIObject {
+        unsafe { &*(self as *const IDXGIOutput as *const IDXGIObject) }
+    }
+}
+
+impl DeclspecUUID for IDXGIOutput {
+    fn uuid() -> winapi::GUID {
+        dxguid::IID_IDXGIOutput
+    }
+}
+
+pub struct IDXGISwapChain {
+    ptr: *mut winapi::IDXGISwapChain,
+}
+
+impl IDXGISwapChain {
+}
+
+impl Deref for IDXGISwapChain {
+    type Target=IDXGIDeviceSubObject;
+
+    fn deref(&self) -> &IDXGIDeviceSubObject {
+        unsafe { &*(self as *const IDXGISwapChain as *const IDXGIDeviceSubObject) }
+    }
+}
+
+impl DeclspecUUID for IDXGISwapChain {
+    fn uuid() -> winapi::GUID {
+        dxguid::IID_IDXGISwapChain
+    }
+}
+
+pub struct IDXGIDeviceSubObject {
+    ptr: *mut winapi::IDXGIDeviceSubObject,
+}
+
+impl IDXGIDeviceSubObject {
+}
+
+impl Deref for IDXGIDeviceSubObject {
+    type Target=IDXGIObject;
+
+    fn deref(&self) -> &IDXGIObject {
+        unsafe { &*(self as *const IDXGIDeviceSubObject as *const IDXGIObject) }
+    }
+}
+
+impl DeclspecUUID for IDXGIDeviceSubObject {
+    fn uuid() -> winapi::GUID {
+        dxguid::IID_IDXGIDeviceSubObject
     }
 }
